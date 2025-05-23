@@ -374,15 +374,13 @@ class ApplyCouponView(APIView):
 
 
 
-
-
-
 from decimal import Decimal
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import PruneOrderDetails
+from .models import PruneOrderDetails, Coupon
 from .serializers import PruneOrderDetailsSerializer
+from .utils import apply_coupon_discount  # This function must be properly implemented
 from django.contrib.auth import get_user_model
 
 class PlaceOrderView(APIView):
@@ -391,47 +389,60 @@ class PlaceOrderView(APIView):
         if not user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        product_name = request.data.get('product_name', 'Indian Sim')
-        product_id = request.data.get('product_id', 'PROD000')
-        quantity = int(request.data.get('quantity', 1))
-        price_per_item = Decimal(request.data.get('price_per_item', '0.00'))
-        discount = Decimal(request.data.get('discount', '0.00'))  # This may come from coupon
-        coupon_code = request.data.get('coupon_code', None)
-        payment_method = request.data.get('payment_method', 'cod')
+        try:
+            product_name = request.data.get('product_name', 'Indian Sim')
+            product_id = request.data.get('product_id', 'PROD000')
+            quantity = int(request.data.get('quantity', 1))
+            price_per_item = Decimal(request.data.get('price_per_item', '0.00'))
+            payment_method = request.data.get('payment_method', 'Unified Payments')  # Use valid default
+            total_amount = price_per_item * quantity
 
-        total_amount = price_per_item * quantity
+            coupon_code_str = request.data.get('coupon_code')
+            discount = Decimal('0.00')
+            coupon_instance = None
 
-        # If coupon_code is provided, validate and apply coupon using your logic from ApplyCouponView
-        if coupon_code:
-           
-            from .utils import apply_coupon_discount  # you should create this helper
+            # Apply coupon if provided
+            if coupon_code_str:
+                coupon_result = apply_coupon_discount(
+                    request=request,
+                    user=user,
+                    code=coupon_code_str,
+                    amount=total_amount,
+                    payment_option=payment_method
+                )
 
-            coupon_result = apply_coupon_discount(request=request, user=user, code=coupon_code, amount=total_amount,
-                                      payment_option=payment_method)
+                if coupon_result.get('error'):
+                    return Response({"error": coupon_result['error']}, status=status.HTTP_400_BAD_REQUEST)
 
+                discount = Decimal(coupon_result.get('discount_applied', '0.00'))
+                final_amount = Decimal(coupon_result.get('final_amount', total_amount))
+                
+                # Get the coupon instance
+                try:
+                    coupon_instance = Coupon.objects.get(coupon_code=coupon_code_str)
+                except Coupon.DoesNotExist:
+                    return Response({"error": "Coupon does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                final_amount = total_amount
 
-            if coupon_result.get('error'):
-                return Response({"error": coupon_result['error']}, status=status.HTTP_400_BAD_REQUEST)
+            # Create order
+            order = PruneOrderDetails.objects.create(
+                order_id=user,
+                product_name=product_name,
+                product_id=product_id,
+                quantity=quantity,
+                price_per_item=price_per_item,
+                total_amount=total_amount,
+                coupon_code=coupon_instance,
+                discount=discount,
+                final_amount=final_amount,
+                payment_method=payment_method,
+                payment_status=False,
+                status='pending'
+            )
 
-            discount = Decimal(coupon_result.get('discount_applied', '0.00'))
-            final_amount = Decimal(coupon_result.get('final_amount', total_amount))
-        else:
-            final_amount = total_amount - discount
+            serializer = PruneOrderDetailsSerializer(order)
+            return Response({"message": "Order placed successfully", "order": serializer.data}, status=status.HTTP_201_CREATED)
 
-        order = PruneOrderDetails.objects.create(
-            order_id=user,
-            product_name=product_name,
-            product_id=product_id,
-            quantity=quantity,
-            price_per_item=price_per_item,
-            total_amount=total_amount,
-            discount=discount,
-            final_amount=final_amount,
-            payment_method=payment_method,
-            payment_status=False,  # Default, or set based on your logic
-            status='pending'  # Default order status
-        )
-
-        serializer = PruneOrderDetailsSerializer(order)
-
-        return Response({"message": "Order placed successfully", "order": serializer.data}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
