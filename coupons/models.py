@@ -60,43 +60,50 @@ class Coupon(models.Model):
     def __str__(self):
         return self.promotion_name
     
-
+    
 
 class CouponUsage(models.Model):
     coupon_code = models.ForeignKey(Coupon, on_delete=models.CASCADE, db_index=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE , db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_index=True)
     last_used_at = models.DateTimeField(auto_now=True)
     usage_count = models.PositiveIntegerField(default=0)
 
+    def __str__(self):
+        return f"{self.user} - {self.coupon_code.coupon_code} - {self.usage_count}"
 
 
 
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+from decimal import Decimal
+from .models import Coupon  # assuming Coupon is in the same app or import properly
 
 class PruneOrderDetails(models.Model):
     ORDER_STATUS_CHOICES = [
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
-        ('pending', 'Pending'),  # Make sure default is in the choices
+        ('pending', 'Pending'),
     ]
 
     PAYMENT_METHOD_CHOICES = [
-        ('cod', 'Cash on Delivery'),
-        ('online', 'Online Payment'),
-        ('upi', 'UPI'),
-        ('card', 'Credit/Debit Card'),
+        ('Unified Payments', 'Unified Payments'),
+        ('Credit Card', 'Credit Card'),
+        ('Debit Card', 'Debit Card'),
+        ('Net Banking', 'Net Banking'),
+        ('UPI', 'UPI'),
     ]
 
-    order_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE ,related_name='orders')
-    product_name = models.CharField(max_length=255, default='Indian Sim')  # or 'E-SIM'
+    order_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    product_name = models.CharField(max_length=255, default='Indian Sim')
     product_id = models.CharField(max_length=100, default='PROD000')
     quantity = models.PositiveIntegerField(default=1)
     price_per_item = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     coupon_code = models.ForeignKey(Coupon, on_delete=models.CASCADE, blank=True, null=True)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    procesing_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     final_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     order_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='pending')
@@ -105,4 +112,3 @@ class PruneOrderDetails(models.Model):
 
     def __str__(self):
         return f"{self.order_id} - {self.product_name}"
-
