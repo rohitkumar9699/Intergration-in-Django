@@ -80,6 +80,9 @@ from django.utils import timezone
 from decimal import Decimal
 from .models import Coupon  # assuming Coupon is in the same app or import properly
 
+
+
+
 class PruneOrderDetails(models.Model):
     ORDER_STATUS_CHOICES = [
         ('delivered', 'Delivered'),
@@ -93,6 +96,7 @@ class PruneOrderDetails(models.Model):
         ('Debit Card', 'Debit Card'),
         ('Net Banking', 'Net Banking'),
         ('UPI', 'UPI'),
+        ('Any', 'Any')
     ]
 
     order_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
