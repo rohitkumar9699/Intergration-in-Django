@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'userManagement',
     'project',
     'coupons',
+    'blog',
 ]
 
 MIDDLEWARE = [
@@ -166,3 +167,6 @@ SIMPLE_JWT = {
 
 
 AUTH_USER_MODEL = 'userManagement.CustomUser'
+
+
+APPEND_SLASH = False
