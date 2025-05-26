@@ -337,7 +337,7 @@ class PlaceOrderView(APIView):
         user = request.user
 
         try:
-            # Extract order details from request
+            # Extract order details
             product_name = request.data.get('product_name', 'Indian Sim')
             product_id = request.data.get('product_id', 'PROD000')
             quantity = int(request.data.get('quantity', 1))
@@ -345,10 +345,12 @@ class PlaceOrderView(APIView):
             payment_method = request.data.get('payment_method', 'Unified Payments')
             total_amount = price_per_item * quantity
 
+            # Defaults
             coupon_code_str = request.data.get('coupon_code')
             discount = Decimal('0.00')
+            final_amount = total_amount
             coupon_instance = None
-
+            coupon_result = None
             # Apply coupon if provided
             if coupon_code_str:
                 coupon_result = apply_coupon_discount(
@@ -356,22 +358,16 @@ class PlaceOrderView(APIView):
                     user=user,
                     code=coupon_code_str,
                     amount=total_amount,
-                    payment_option=payment_method
+                    payment_option=payment_method   
                 )
+                if not isinstance(coupon_result, Response):  # Handle error case only
+                    return Response(coupon_result, status=status.HTTP_400_BAD_REQUEST)
 
-                if isinstance(coupon_result, Response):  # error or success response
-                    return coupon_result
-
-                # Extract from successful result
-                discount = Decimal(coupon_result.get('discount_applied', '0.00'))
-                final_amount = Decimal(coupon_result.get('final_amount', total_amount))
-                
-                # Fetch coupon instance
+                discount = Decimal(coupon_result.data["discount_applied"])
+                final_amount = Decimal(coupon_result.data['final_amount'])
                 coupon_instance = Coupon.objects.filter(coupon_code=coupon_code_str).first()
-            else:
-                final_amount = total_amount
 
-            # Create and save order
+            # Create order
             order = PruneOrderDetails.objects.create(
                 order_id=user,
                 product_name=product_name,
@@ -389,7 +385,7 @@ class PlaceOrderView(APIView):
 
             serializer = PruneOrderDetailsSerializer(order)
             return Response({
-                "message": "Order placed successfully",
+                "message": coupon_result.data["message"],
                 "order": serializer.data
             }, status=status.HTTP_201_CREATED)
 

@@ -81,6 +81,19 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
 
     if coupon.promotion_type == "Cash back":
         
+         # Fetch the wallet for the logged-in user
+        try:
+            get_wallet = Wallet.objects.get(user=request.user)
+        except Wallet.DoesNotExist:
+            return Response({"error": "Wallet not found for user"}, status=status.HTTP_404_NOT_FOUND)
+
+        wallet_before = Decimal(get_wallet.amount)
+
+        if wallet_before < amount:
+            return Response({"error": "Insufficient wallet balance"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
         # ✅ Save coupon usage
         user_usage = CouponUsage.objects.filter(coupon_code=coupon, user=user)
         if user_usage.exists():
@@ -93,7 +106,7 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
             user_usage.usage_count = 1
             user_usage.last_used_at = timezone.now()
             user_usage.save()
-
+        
         if  coupon_usage.token_used_count+1>= coupon_usage.max_total_usage:
             coupon_usage.is_active = False
             coupon_usage.save()
@@ -101,22 +114,11 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
         coupon_usage.token_used_count += 1
         coupon_usage.save()
 
-        # Fetch the wallet for the logged-in user
-        try:
-            get_wallet = Wallet.objects.get(user=request.user)
-        except Wallet.DoesNotExist:
-            return Response({"error": "Wallet not found for user"}, status=status.HTTP_404_NOT_FOUND)
-
-        wallet_before = Decimal(get_wallet.amount)
-
-        if wallet_before < final_amount:
-            return Response({"error": "Insufficient wallet balance"}, status=status.HTTP_400_BAD_REQUEST)
-
         # Deduct the amount from the wallet and save
-    
-        get_wallet.amount = wallet_before - amount
+        wallet_after = wallet_before - amount
+        get_wallet.amount = wallet_after
         get_wallet.save()
-
+        
         # ✅ Return response
         return Response({
         "coupon_applied": coupon.coupon_code,
@@ -124,14 +126,13 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
         "promotion_type": coupon.promotion_type,
         "discount_type": coupon.discount_type,
         "currency": coupon.currency,
-        "original_amount": str(amount),
-        "discount_applied": str(discount),
-        "final_amount": str(final_amount),
-        "wallet_balance_before": str(wallet_before),
-        "wallet_balance_after": str(wallet_before - amount),
-        "message": "This coupon is applied And Refund Will be Backed to Wallet within 3 Days",
+        "original_amount": int(amount),
+        "discount_applied": int(discount),
+        "final_amount": int(amount),
+        "wallet_balance_before": int(wallet_before),
+        "wallet_balance_after": int(wallet_before - amount),
+         "message": f"This coupon is applied and ₹{int(discount)} will be added to wallet after the completion of the order"
         }, status=status.HTTP_200_OK)
-
     # Fetch the wallet for the logged-in user
     try:
         get_wallet = Wallet.objects.get(user=request.user)
@@ -143,10 +144,6 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
     if wallet_before < final_amount:
         return Response({"error": "Insufficient wallet balance"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Deduct the amount from the wallet and save
-    wallet_after = wallet_before - final_amount
-    get_wallet.amount = wallet_after
-    get_wallet.save()
 
 
     # ✅ Save coupon usage
@@ -169,7 +166,12 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
     coupon_usage.token_used_count += 1
     coupon_usage.save()
 
+     # Deduct the amount from the wallet and save
+    wallet_after = wallet_before - final_amount
+    get_wallet.amount = wallet_after
+    get_wallet.save()
 
+    print(f"Wallet balance after deduction: {discount}")
     return Response({
     "coupon_applied": coupon.coupon_code,
     "promotion_name": coupon.promotion_name,
