@@ -17,7 +17,6 @@ CATEGORY_CHOICES = [
 
 class BlogPost(models.Model):
     title = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True, blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     author = models.CharField(max_length=100, blank=True, null=True)
     published_date = models.DateField( auto_now_add=True)
@@ -27,11 +26,6 @@ class BlogPost(models.Model):
     views = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
     dislikes = models.PositiveIntegerField(default=0)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
