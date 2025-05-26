@@ -8,6 +8,8 @@ from rest_framework import status
 from django.http import HttpResponse
 
 
+
+
 def apply_coupon_discount(request, user, code, amount, payment_option=None, bank_or_card_name=None):
     payment_option = payment_option
     bank_or_card_name = bank_or_card_name
@@ -78,27 +80,6 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
 
 
     if coupon.promotion_type == "Cash back":
-
-        # ✅ Wallet balance validation
-        # get_wallet = Wallet.objects.get(user=request.user)
-        # print("this is my wallet ---->", get_wallet)
-        # print("this is my wallet amount ---->", get_wallet.amount)
-        get_wallet = Wallet.objects.get(user=request.user)
-
-        # wallet_before = getattr(user, 'wallet_balance', Decimal('0.00'))
-        wallet_before = Decimal(get_wallet.amount)
-
-        if wallet_before < amount:
-            return Response({"error": "Insufficient wallet balance"}, status=status.HTTP_400_BAD_REQUEST)
-        # ✅ Deduct from wallet and save
-
-        wallet_after = wallet_before - amount
-        user.wallet_balance = wallet_after
-        user.save()
-
-        OrderDetails = PruneOrderDetails.objects.get(user=request.user)
-        OrderDetails.number_of_orders = OrderDetails.number_of_orders + 1
-        OrderDetails.save()
         
         # ✅ Save coupon usage
         user_usage = CouponUsage.objects.filter(coupon_code=coupon, user=user)
@@ -120,6 +101,22 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
         coupon_usage.token_used_count += 1
         coupon_usage.save()
 
+        # Fetch the wallet for the logged-in user
+        try:
+            get_wallet = Wallet.objects.get(user=request.user)
+        except Wallet.DoesNotExist:
+            return Response({"error": "Wallet not found for user"}, status=status.HTTP_404_NOT_FOUND)
+
+        wallet_before = Decimal(get_wallet.amount)
+
+        if wallet_before < final_amount:
+            return Response({"error": "Insufficient wallet balance"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Deduct the amount from the wallet and save
+    
+        get_wallet.amount = wallet_before - amount
+        get_wallet.save()
+
         # ✅ Return response
         return Response({
         "coupon_applied": coupon.coupon_code,
@@ -131,34 +128,26 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
         "discount_applied": str(discount),
         "final_amount": str(final_amount),
         "wallet_balance_before": str(wallet_before),
-        "wallet_balance_after": str(wallet_after),
+        "wallet_balance_after": str(wallet_before - amount),
         "message": "This coupon is applied And Refund Will be Backed to Wallet within 3 Days",
         }, status=status.HTTP_200_OK)
 
-    # ✅ Wallet balance validation
-    # get_wallet = Wallet.objects.get(user=request.user)
-    # print("this is my wallet ---->", get_wallet)
-    # print("this is my wallet amount ---->", get_wallet.amount)
-    get_wallet = Wallet.objects.get(user=request.user)
+    # Fetch the wallet for the logged-in user
+    try:
+        get_wallet = Wallet.objects.get(user=request.user)
+    except Wallet.DoesNotExist:
+        return Response({"error": "Wallet not found for user"}, status=status.HTTP_404_NOT_FOUND)
 
-    # wallet_before = getattr(user, 'wallet_balance', Decimal('0.00'))
     wallet_before = Decimal(get_wallet.amount)
 
-
-    
-    print(wallet_before)
     if wallet_before < final_amount:
         return Response({"error": "Insufficient wallet balance"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # ✅ Deduct from wallet and save
+    # Deduct the amount from the wallet and save
     wallet_after = wallet_before - final_amount
-    user.wallet_balance = wallet_after
-    # user.number_of_orders = user.number_of_orders + 1
-    user.save()
+    get_wallet.amount = wallet_after
+    get_wallet.save()
 
-    OrderDetails = PruneOrderDetails.objects.get(user=request.user)
-    OrderDetails.number_of_orders = OrderDetails.number_of_orders + 1
-    OrderDetails.save()
 
     # ✅ Save coupon usage
     user_usage = CouponUsage.objects.filter(coupon_code=coupon, user=user)
@@ -182,15 +171,15 @@ def apply_coupon_discount(request, user, code, amount, payment_option=None, bank
 
 
     return Response({
-        "coupon_applied": coupon.coupon_code,
-        "promotion_name": coupon.promotion_name,
-        "promotion_type": coupon.promotion_type,
-        "discount_type": coupon.discount_type,
-        "currency": coupon.currency,
-        "original_amount": str(amount),
-        "discount_applied": str(discount),
-        "final_amount": str(final_amount),
-        "wallet_balance_before": str(wallet_before),
-        "wallet_balance_after": str(wallet_after),
-        "message": "Coupon successfully applied and amount deducted."
-    }, status=status.HTTP_200_OK)
+    "coupon_applied": coupon.coupon_code,
+    "promotion_name": coupon.promotion_name,
+    "promotion_type": coupon.promotion_type,
+    "discount_type": coupon.discount_type,
+    "currency": coupon.currency,
+    "original_amount": int(amount),
+    "discount_applied": int(discount),
+    "final_amount": int(final_amount),
+    "wallet_balance_before": int(wallet_before),
+    "wallet_balance_after": int(wallet_after),
+    "message": "Coupon successfully applied and amount deducted."
+}, status=status.HTTP_200_OK)

@@ -321,80 +321,28 @@ class ApplyCouponView(APIView):
 
 
 
-
-
-# from .utils import apply_coupon_discount
-
-# class ApplyCouponView(APIView):
-#     def post(self, request):
-#         user = request.user
-#         code = request.data.get('coupon_code')
-#         amount = request.data.get('amount')
-#         payment_option = request.data.get('payment_option')
-#         bank_or_card_name = request.data.get('bank_or_card_name')
-
-#         if not code or not amount:
-#             return Response({"error": "coupon_code and amount are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         result = apply_coupon_discount(user, code, amount, payment_option, bank_or_card_name)
-#         if 'error' in result:
-#             return Response({"error": result['error']}, status=status.HTTP_400_BAD_REQUEST)
-
-#         discount = result['discount_applied']
-#         final_amount = result['final_amount']
-#         coupon = result['coupon']
-
-#         # Return your detailed response as before (wallet logic, usage increment etc.)
-
-#         return Response({
-#             "coupon_applied": coupon.coupon_code,
-#             "promotion_name": coupon.promotion_name,
-#             "promotion_type": coupon.promotion_type,
-#             "discount_type": coupon.discount_type,
-#             "currency": coupon.currency,
-#             "original_amount": amount,
-#             "discount_applied": str(discount),
-#             "final_amount": str(final_amount),
-#             "message": "Coupon applied successfully"
-#         }, status=status.HTTP_200_OK)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 from decimal import Decimal
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from .models import PruneOrderDetails, Coupon
 from .serializers import PruneOrderDetailsSerializer
-from .utils import apply_coupon_discount  # This function must be properly implemented
-from django.contrib.auth import get_user_model
+from .utils import apply_coupon_discount
+
 
 class PlaceOrderView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         user = request.user
-        if not user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
+            # Extract order details from request
             product_name = request.data.get('product_name', 'Indian Sim')
             product_id = request.data.get('product_id', 'PROD000')
             quantity = int(request.data.get('quantity', 1))
             price_per_item = Decimal(request.data.get('price_per_item', '0.00'))
-            payment_method = request.data.get('payment_method', 'Unified Payments')  # Use valid default
+            payment_method = request.data.get('payment_method', 'Unified Payments')
             total_amount = price_per_item * quantity
 
             coupon_code_str = request.data.get('coupon_code')
@@ -411,21 +359,19 @@ class PlaceOrderView(APIView):
                     payment_option=payment_method
                 )
 
-                if coupon_result.get('error'):
-                    return Response({"error": coupon_result['error']}, status=status.HTTP_400_BAD_REQUEST)
+                if isinstance(coupon_result, Response):  # error or success response
+                    return coupon_result
 
+                # Extract from successful result
                 discount = Decimal(coupon_result.get('discount_applied', '0.00'))
                 final_amount = Decimal(coupon_result.get('final_amount', total_amount))
                 
-                # Get the coupon instance
-                try:
-                    coupon_instance = Coupon.objects.get(coupon_code=coupon_code_str)
-                except Coupon.DoesNotExist:
-                    return Response({"error": "Coupon does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+                # Fetch coupon instance
+                coupon_instance = Coupon.objects.filter(coupon_code=coupon_code_str).first()
             else:
                 final_amount = total_amount
 
-            # Create order
+            # Create and save order
             order = PruneOrderDetails.objects.create(
                 order_id=user,
                 product_name=product_name,
@@ -442,7 +388,10 @@ class PlaceOrderView(APIView):
             )
 
             serializer = PruneOrderDetailsSerializer(order)
-            return Response({"message": "Order placed successfully", "order": serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Order placed successfully",
+                "order": serializer.data
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
