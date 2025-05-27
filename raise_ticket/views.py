@@ -65,7 +65,17 @@ class TicketResolveAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAdminUser]
 
+
+
     def post(self, request, id):
+
+        user = request.user
+        print(user.communication_email)
+        def get_permissions(self):
+            if self.request.method == 'POST':
+                return [permission() for permission in self.permission_classes]
+            return super().get_permissions()
+        
         try:
             ticket = Ticket.objects.get(id=id)
         except Ticket.DoesNotExist:
@@ -77,13 +87,13 @@ class TicketResolveAPIView(APIView):
                 "detail": "Ticket is already resolved."
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Check for expiry
         expiry_date = ticket.created_at + timezone.timedelta(days=7)
         now = timezone.now()
 
         if now > expiry_date:
-            if ticket.is_active:
-                ticket.is_active = False
-                ticket.save(update_fields=['is_active'])
+            ticket.is_active = False
+            ticket.save(update_fields=['is_active'])
             return Response({
                 "detail": "Ticket expired and cannot be resolved. It is now inactive."
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -94,15 +104,20 @@ class TicketResolveAPIView(APIView):
                 "resolution_message": ["This field is required to resolve the ticket."]
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        
         data = {
             'resolution_message': resolution_message,
             'resolved_at': now,
             'is_active': False,
-            'resolved_by_email': request.user.communication_email  # added field
+            'resolved_by': user.communication_email
         }
 
         serializer = TicketSerializer(ticket, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response({
+                "message": "Ticket resolved successfully.",
+                "ticket": serializer.data
+            }, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
