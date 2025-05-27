@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'project',
     'coupons',
     'blog',
+    'ckeditor',
 ]
 
 MIDDLEWARE = [
@@ -169,4 +170,4 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = 'userManagement.CustomUser'
 
 
-APPEND_SLASH = False
+APPEND_SLASH =  False

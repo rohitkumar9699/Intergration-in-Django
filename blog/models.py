@@ -1,5 +1,5 @@
 from django.db import models
-from django.utils.text import slugify
+from ckeditor.fields import RichTextField
 
 # Predefined categories based on Prune's blog
 CATEGORY_CHOICES = [
@@ -21,7 +21,8 @@ class BlogPost(models.Model):
     author = models.CharField(max_length=100, blank=True, null=True)
     published_date = models.DateField( auto_now_add=True)
     updated_date = models.DateField( auto_now=True)
-    content = models.TextField()
+    # content = models.TextField()
+    content = RichTextField()
     featured_image = models.ImageField(upload_to='blog_images/', blank=True, null=True)
     views = models.PositiveIntegerField(default=0)
     likes = models.PositiveIntegerField(default=0)
