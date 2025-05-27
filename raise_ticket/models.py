@@ -20,7 +20,7 @@ class Ticket(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
     resolved_at = models.DateTimeField(null=True, blank=True)
-    resolved_by = models.EmailField(null=False, blank=False)
+    resolved_by = models.EmailField(null=True, blank=True)
 
     def __str__(self):
         return f"Ticket #{self.id}"
