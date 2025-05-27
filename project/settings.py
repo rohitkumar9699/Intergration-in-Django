@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'coupons',
     'blog',
     'ckeditor',
+    'raise_ticket',
 ]
 
 MIDDLEWARE = [

@@ -23,4 +23,5 @@ urlpatterns = [
     path('', include('userManagement.urls')),
     path('', include('coupons.urls')),
     path('', include('blog.urls')),
+    path('', include('raise_ticket.urls')),
 ]
