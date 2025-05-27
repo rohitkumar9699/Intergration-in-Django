@@ -30,8 +30,7 @@ class TicketCreateAPIView(APIView):
 
 class TicketView(APIView):
     def get(self, request, id=None):
-        search_query = request.GET.get('search', '')
-        page_number = request.GET.get('page', 1)
+        
 
         if id:
             try:
@@ -40,22 +39,30 @@ class TicketView(APIView):
                 return Response(serializer.data)
             except Ticket.DoesNotExist:
                 return Response({"detail": "Ticket not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # search_query = request.GET.get('search', '')
+        # page_number = request.GET.get('page', 1)
+        # tickets = Ticket.objects.all().order_by('-created_at')
+        # if search_query:
+        #     tickets = tickets.filter(Q(order_id__icontains=search_query))
 
-        tickets = Ticket.objects.all().order_by('-created_at')
-        if search_query:
-            tickets = tickets.filter(Q(order_id__icontains=search_query))
+        # paginator = Paginator(tickets, 10)
+        # page_obj = paginator.get_page(page_number)
+        # serializer = TicketSerializer(page_obj, many=True)
 
-        paginator = Paginator(tickets, 10)
-        page_obj = paginator.get_page(page_number)
-        serializer = TicketSerializer(page_obj, many=True)
-
-        return Response({
-            'count': paginator.count,
-            'num_pages': paginator.num_pages,
-            'current_page': page_obj.number,
-            'results': serializer.data
-        })
-
+        # return Response({
+        #     'count': paginator.count,
+        #     'num_pages': paginator.num_pages,
+        #     'current_page': page_obj.number,
+        #     'results': serializer.data
+        # })
+        from rest_framework.pagination import PageNumberPagination
+        tickets = Ticket.objects.all().order_by('-created_at')  # Apply ordering
+        paginator = PageNumberPagination()
+        paginator.page_size = 5  # Optional: override default page size
+        result_page = paginator.paginate_queryset(tickets, request)
+        serializer = TicketSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
