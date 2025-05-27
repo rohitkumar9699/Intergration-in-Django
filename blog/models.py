@@ -1,6 +1,8 @@
 from django.db import models
 from ckeditor.fields import RichTextField
 
+
+
 # Predefined categories based on Prune's blog
 CATEGORY_CHOICES = [
     ("Travel", "Travel"),
@@ -17,6 +19,7 @@ CATEGORY_CHOICES = [
 
 class BlogPost(models.Model):
     title = models.CharField(max_length=255)
+    blog_url_name = models.SlugField(max_length=255, unique=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     author = models.CharField(max_length=100, blank=True, null=True)
     published_date = models.DateField( auto_now_add=True)

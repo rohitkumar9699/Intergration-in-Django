@@ -171,3 +171,34 @@ AUTH_USER_MODEL = 'userManagement.CustomUser'
 
 
 APPEND_SLASH =  False
+
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript'],
+            ['Format', 'Font', 'FontSize'],
+            ['TextColor', 'BGColor'],
+            ['NumberedList', 'BulletedList', 'Outdent', 'Indent', 'Blockquote'],
+            ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Link', 'Unlink', 'Anchor'],
+            ['Image', 'Table', 'HorizontalRule', 'SpecialChar'],
+            ['SelectAll', 'Find', 'Replace'],
+            ['Source', 'Maximize', 'ShowBlocks'],
+            ['Preview', 'Print', 'Templates'],
+        ],
+        'height': 400,
+        'width': '100%',
+        'extraPlugins': ','.join([
+            'justify', 'font', 'colorbutton', 'find', 'print', 'preview',
+            'autogrow', 'embed', 'iframe', 'uploadimage'
+        ]),
+        'removePlugins': 'stylesheetparser',
+        'autoGrow_minHeight': 300,
+        'autoGrow_maxHeight': 600,
+        'autoGrow_bottomSpace': 50,
+        'forcePasteAsPlainText': True,
+    }
+}
+
