@@ -16,6 +16,17 @@ def get_country(ip):
     if ip == "127.0.0.1":
         return "Localhost"
     
+    # ip = "216.152.158.66"
+
+    try:
+        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=3)
+        response.raise_for_status()
+        data = response.json()
+        if data.get("status") == "success":
+            return data.get("country", "Unknown")
+    except requests.RequestException:
+        pass
+
     try:
         response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=3)
         response.raise_for_status()
@@ -26,15 +37,6 @@ def get_country(ip):
     except requests.RequestException:
         pass
     
-    # Fallback to ip-api.com
-    try:
-        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=3)
-        response.raise_for_status()
-        data = response.json()
-        if data.get("status") == "success":
-            return data.get("country", "Unknown")
-    except requests.RequestException:
-        pass
     
     return "Unknown"
 
