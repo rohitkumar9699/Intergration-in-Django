@@ -113,6 +113,7 @@ class PruneOrderDetails(models.Model):
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='pending')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
     payment_status = models.BooleanField(default=False)
+    category = models.CharField(null= True)
 
     
     

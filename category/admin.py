@@ -1,10 +1,8 @@
 from django.contrib import admin
 from .models import Category
 
+@admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    # Show these fields in the list view
-    list_display = ('category_name', 'category_url_name')
-    list_display_links = ('category_name',)
-    search_fields = ('category_name', 'category_url_name')
-    ordering = ('category_name',)
-admin.site.register(Category, CategoryAdmin)
+    list_display = ['category_name', 'category_url_name']
+    list_filter = ['category_name']  # ✅ Dropdown filter for all categories
+    search_fields = ['category_name']  # ✅ Typing search

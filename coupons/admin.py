@@ -31,12 +31,10 @@ class CouponUsageAdmin(admin.ModelAdmin):
 class PruneOrderDetailsAdmin(admin.ModelAdmin):
     list_display = [
         field.name for field in PruneOrderDetails._meta.get_fields()
-        if not field.many_to_many and not field.one_to_many
+        if not field.many_to_many and not field.one_to_many 
     ]
     list_filter = (
         'status', 'payment_method', 'payment_status', 'order_date',
     )
-    search_fields = (
-        'order_by__email', 'order_by__username', 'product_name', 'product_id'
-    )
+    
     ordering = ('-order_date',)

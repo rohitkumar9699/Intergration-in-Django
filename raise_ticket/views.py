@@ -6,17 +6,42 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.db.models import Q
-
 from .models import Ticket
 from .serializers import TicketSerializer
+from coupons.models import *
+
+import requests
 
 
-# ✅ 1. Create a Ticket
+def get_country(ip):
+    if ip == "127.0.0.1":
+        return "Localhost"
+    response = requests.get(f"https://ipinfo.io/{ip}/json")
+    return response.json().get("country", "Unknown")
+
+print(get_country("103.27.9.190"))
+
+
+
 class TicketCreateAPIView(APIView):
     def post(self, request):
         ip = request.META.get('REMOTE_ADDR')
         data = request.data.copy()
-        data['ip_address'] = ip  # Save IP
+        data['ip_address'] = ip
+
+        country = get_country(ip)
+        
+        data['country'] = country
+
+        # Validate and get order instance
+        try:
+            order = PruneOrderDetails.objects.get(id=data['order_id'])
+        except PruneOrderDetails.DoesNotExist:
+            return Response({"error": "Invalid order ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Set category from order
+        data['category'] = order.category  # Ensure this is a string value like "india_sim"
+
         serializer = TicketSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -88,13 +113,14 @@ class TicketResolveAPIView(APIView):
             'is_active': False,
             'resolved_by': user.communication_email  # ✅ This should match your model field
         }
-
         serializer = TicketSerializer(ticket, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            response_data = serializer.data.copy()
+            response_data.pop('ip_address', None)
             return Response({
-                "message": "Ticket resolved successfully.",
-                "ticket": serializer.data
+                "message": "Update on Ticket.",
+                "ticket": response_data
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
