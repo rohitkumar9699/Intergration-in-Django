@@ -37,6 +37,6 @@ class PruneOrderDetailsAdmin(admin.ModelAdmin):
         'status', 'payment_method', 'payment_status', 'order_date',
     )
     search_fields = (
-        'order_id__email', 'order_id__username', 'product_name', 'product_id'
+        'order_by__email', 'order_by__username', 'product_name', 'product_id'
     )
     ordering = ('-order_date',)

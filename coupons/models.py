@@ -99,7 +99,7 @@ class PruneOrderDetails(models.Model):
         ('Any', 'Any')
     ]
 
-    order_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    order_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
     product_name = models.CharField(max_length=255, default='Indian Sim')
     product_id = models.CharField(max_length=100, default='PROD000')
     quantity = models.PositiveIntegerField(default=1)
@@ -114,5 +114,8 @@ class PruneOrderDetails(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
     payment_status = models.BooleanField(default=False)
 
-    def __str__(self):
-        return f"{self.order_id} - {self.product_name}"
+    
+    
+    
+    
+    

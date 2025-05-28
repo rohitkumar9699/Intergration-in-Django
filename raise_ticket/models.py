@@ -11,8 +11,8 @@ from coupons.models import *  # Assuming these models are defined in the same ap
 
 class Ticket(models.Model):
     
-    # order_id = models.ForeignKey(PruneOrderDetails, on_delete=models.CASCADE)
-    order_id = models.CharField(unique=True)
+    order_id = models.ForeignKey(PruneOrderDetails, on_delete=models.CASCADE)
+    # order_id = models.CharField(unique=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     resolution_message = models.TextField(null=True, blank=True) # remove
     issue_description = models.TextField()

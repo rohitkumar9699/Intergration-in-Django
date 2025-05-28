@@ -21,7 +21,7 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
 
         if coupon.promotion_type == "Cash back":
             try:
-                wallet = Wallet.objects.get(user=instance.order_id)
+                wallet = Wallet.objects.get(user=instance.order_by)
 
                 # Convert both to Decimal safely
                 cashback = Decimal(str(instance.discount)).quantize(Decimal("0.01"))
@@ -36,8 +36,8 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
 
                 transaction.on_commit(mark_payment_done)
 
-                print(f"✅ Cashback of ₹{cashback} added to user {instance.order_id}.")
+                print(f"✅ Cashback of ₹{cashback} added to user {instance.order_by}.")
                 print(f"Wallet: ₹{old_balance} → ₹{wallet.amount}")
 
             except Wallet.DoesNotExist:
-                print(f"⚠️ Wallet not found for user {instance.order_id}.")
+                print(f"⚠️ Wallet not found for user {instance.order_by}.")

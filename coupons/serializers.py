@@ -24,5 +24,5 @@ class PruneOrderDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PruneOrderDetails
         fields = '__all__'
-        read_only_fields = ['order_id', 'total_amount', 'final_amount', 'order_date', 'payment_status']
+        read_only_fields = ['order_by', 'total_amount', 'final_amount', 'order_date', 'payment_status']
     

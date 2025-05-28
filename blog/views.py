@@ -3,14 +3,18 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import *
 from .serializers import *
-
+from django.db.models import F
 
 class BlogDetailView(APIView):
     def get(self, request, blog_url_name):
         try:
             blog = BlogPost.objects.get(blog_url_name=blog_url_name)
+            
+            BlogPost.objects.filter(pk=blog.pk).update(views=F('views') + 1)
+        
             serializer = BlogPostSerializer(blog)
             return Response(serializer.data, status=status.HTTP_200_OK)
+
         except BlogPost.DoesNotExist:
             return Response(
                 {"error": f"Blog with slug '{blog_url_name}' not found"},
@@ -31,8 +35,7 @@ class BlogListView(APIView):
                 # Sanitize and lowercase the input
                 category_cleaned = category.strip().lower()
 
-                # Case-insensitive category matching using iexact
-                blogs = BlogPost.objects.filter(category__iexact=category_cleaned)
+                blogs = BlogPost.objects.filter(category__category_name__iexact=category_cleaned)
 
                 if not blogs.exists():
                     return Response({"message": "No blogs found in this category."}, status=status.HTTP_200_OK)

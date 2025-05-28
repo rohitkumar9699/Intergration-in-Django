@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'blog',
     'ckeditor',
     'raise_ticket',
+    'category',
 ]
 
 MIDDLEWARE = [

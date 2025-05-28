@@ -1,7 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.paginator import Paginator
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAdminUser
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.db.models import Q
 
@@ -9,29 +11,26 @@ from .models import Ticket
 from .serializers import TicketSerializer
 
 
+# ✅ 1. Create a Ticket
 class TicketCreateAPIView(APIView):
     def post(self, request):
         ip = request.META.get('REMOTE_ADDR')
         data = request.data.copy()
-        data['ip_address'] = ip
+        data['ip_address'] = ip  # Save IP
         serializer = TicketSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(
-            {
+            return Response({
                 "data": serializer.data,
                 "message": "Ticket raised successfully"
-            }, 
-    status=status.HTTP_201_CREATED
-)
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
+
+# ✅ 2. View Ticket(s) with Pagination
 class TicketView(APIView):
     def get(self, request, id=None):
-        
-
         if id:
             try:
                 ticket = Ticket.objects.get(id=id)
@@ -39,62 +38,34 @@ class TicketView(APIView):
                 return Response(serializer.data)
             except Ticket.DoesNotExist:
                 return Response({"detail": "Ticket not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # search_query = request.GET.get('search', '')
-        # page_number = request.GET.get('page', 1)
-        # tickets = Ticket.objects.all().order_by('-created_at')
-        # if search_query:
-        #     tickets = tickets.filter(Q(order_id__icontains=search_query))
 
-        # paginator = Paginator(tickets, 10)
-        # page_obj = paginator.get_page(page_number)
-        # serializer = TicketSerializer(page_obj, many=True)
+        tickets = Ticket.objects.all().order_by('-created_at')
 
-        # return Response({
-        #     'count': paginator.count,
-        #     'num_pages': paginator.num_pages,
-        #     'current_page': page_obj.number,
-        #     'results': serializer.data
-        # })
-        from rest_framework.pagination import PageNumberPagination
-        tickets = Ticket.objects.all().order_by('-created_at')  # Apply ordering
         paginator = PageNumberPagination()
-        paginator.page_size = 5  # Optional: override default page size
+        paginator.page_size = 5
         result_page = paginator.paginate_queryset(tickets, request)
         serializer = TicketSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-from rest_framework.permissions import IsAdminUser
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
-
+# ✅ 3. Resolve a Ticket (Admin Only)
 class TicketResolveAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAdminUser]
 
-
-
     def post(self, request, id):
-
         user = request.user
-        print(user.communication_email)
-        def get_permissions(self):
-            if self.request.method == 'POST':
-                return [permission() for permission in self.permission_classes]
-            return super().get_permissions()
-        
+
         try:
             ticket = Ticket.objects.get(id=id)
         except Ticket.DoesNotExist:
             return Response({"detail": "Ticket not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if ticket is already resolved (inactive)
+        # If already resolved
         if not ticket.is_active:
-            return Response({
-                "detail": "Ticket is already resolved."
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Ticket is already resolved."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check for expiry
+        # Check expiry
         expiry_date = ticket.created_at + timezone.timedelta(days=7)
         now = timezone.now()
 
@@ -111,12 +82,11 @@ class TicketResolveAPIView(APIView):
                 "resolution_message": ["This field is required to resolve the ticket."]
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        
         data = {
             'resolution_message': resolution_message,
             'resolved_at': now,
             'is_active': False,
-            'resolved_by': user.communication_email
+            'resolved_by': user.communication_email  # ✅ This should match your model field
         }
 
         serializer = TicketSerializer(ticket, data=data, partial=True)

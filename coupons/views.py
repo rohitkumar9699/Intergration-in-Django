@@ -369,7 +369,7 @@ class PlaceOrderView(APIView):
 
             # Create order
             order = PruneOrderDetails.objects.create(
-                order_id=user,
+                order_by=user,
                 product_name=product_name,
                 product_id=product_id,
                 quantity=quantity,
