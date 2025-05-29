@@ -5,7 +5,7 @@ from .models import Ticket
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = [
-        'get_order_id', 'resolved_by', 'category', 'created_at',
+        'name','get_order_id', 'resolved_by', 'category', 'created_at',
         'resolved_at', 'is_active','country'
     ]
     list_filter = ['category', 'is_active']

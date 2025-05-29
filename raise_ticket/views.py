@@ -5,18 +5,19 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
-from .models import Ticket
-from .serializers import TicketSerializer
-from coupons.models import PruneOrderDetails
+from .models import *
+from .serializers import *
+from coupons.models import *
 import requests
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import AccessToken
+from django.contrib.auth import get_user_model
 
 
 def get_country(ip):
     if ip == "127.0.0.1":
-        return "Localhost"
+        return "Localhost" 
     
-    # ip = "216.152.158.66"
 
     try:
         response = requests.get(f"http://ip-api.com/json/{ip}", timeout=3)
@@ -26,16 +27,18 @@ def get_country(ip):
             return data.get("country", "Unknown")
     except requests.RequestException:
         pass
+    
+    # Removed IP because it is giving India as IN 
 
-    try:
-        response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=3)
-        response.raise_for_status()
-        data = response.json()
-        country = data.get("country")
-        if country:
-            return country
-    except requests.RequestException:
-        pass
+    # try:
+    #     response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=3)
+    #     response.raise_for_status()
+    #     data = response.json()
+    #     country = data.get("country")
+    #     if country:
+    #         return country
+    # except requests.RequestException:
+    #     pass
     
     
     return "Unknown"
@@ -46,8 +49,19 @@ class TicketCreateAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+
     def post(self, request):
         try:
+            auth_header = request.headers.get('Authorization')
+            token_str = auth_header.split(' ')[1]  # Extract token
+            token = AccessToken(token_str)
+            user_id = token['user_id'] 
+            User = get_user_model()
+            user = User.objects.get(id=user_id)
+            print(user.full_name)
+            print(user.username)
+
+
             ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
             data = request.data.copy()
             data['country'] = get_country(ip)
@@ -58,7 +72,7 @@ class TicketCreateAPIView(APIView):
                 return Response({"error": "Invalid order ID"}, status=status.HTTP_400_BAD_REQUEST)
 
             data['category'] = order.category  # Automatically copying category
-
+            data['name'] = user.full_name
             serializer = TicketSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()

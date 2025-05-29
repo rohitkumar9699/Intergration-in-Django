@@ -9,6 +9,7 @@ class Ticket(models.Model):
     order_id = models.ForeignKey(PruneOrderDetails, on_delete=models.CASCADE)
     # order_id = models.CharField(unique=True)
     category = models.CharField(max_length=70 )
+    name = models.CharField(max_length=100, blank=True, null=True)
     resolution_message = models.TextField(null=True, blank=True) # remove
     issue_description = models.TextField()
     country = models.CharField(blank=True)
