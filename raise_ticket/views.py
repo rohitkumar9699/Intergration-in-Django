@@ -52,15 +52,16 @@ class TicketCreateAPIView(APIView):
 
     def post(self, request):
         try:
-            auth_header = request.headers.get('Authorization')
-            token_str = auth_header.split(' ')[1]  # Extract token
-            token = AccessToken(token_str)
-            user_id = token['user_id'] 
-            User = get_user_model()
-            user = User.objects.get(id=user_id)
-            print(user.full_name)
-            print(user.username)
+            user = request.user
+            order_id = request.data.get('order_id')
 
+            # Check if user_id exists in PruneOrderDetails
+            if not PruneOrderDetails.objects.filter(order_by=user, id = order_id).exists():
+                return Response({"error": "Wrong user authentication or order ID to raise the ticket "}, status=403)
+
+            
+            if Ticket.objects.filter(order_id=order_id, is_active=True).exists():
+                return Response({"error": "Only one ticket can be raised at a time"}, status=403)
 
             ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
             data = request.data.copy()
@@ -154,11 +155,9 @@ class TicketResolveAPIView(APIView):
             serializer = TicketSerializer(ticket, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-                response_data = serializer.data.copy()
-                response_data.pop('ip_address', None)
                 return Response({
                     "message": "Update on Ticket.",
-                    "ticket": response_data
+                    "ticket": serializer.data
                 }, status=status.HTTP_200_OK)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
