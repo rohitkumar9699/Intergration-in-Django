@@ -61,10 +61,11 @@ class TicketCreateAPIView(APIView):
 
             
             if Ticket.objects.filter(order_id=order_id, is_active=True).exists():
-                return Response({"error": "Only one ticket can be raised at a time"}, status=403)
+                return Response({"error": "Only one ticket can be raised at a time"}, status=409)
 
             ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
-            data = request.data.copy()
+            data = request.data
+            
             data['country'] = get_country(ip)
             print(get_country('103.152.158.66'))
             try:

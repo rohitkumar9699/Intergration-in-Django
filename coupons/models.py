@@ -116,7 +116,3 @@ class PruneOrderDetails(models.Model):
     category = models.CharField(null= True)
 
     
-    
-    
-    
-    
