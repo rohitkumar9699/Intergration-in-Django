@@ -10,9 +10,6 @@ from .serializers import *
 from coupons.models import *
 import requests
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import AccessToken
-from django.contrib.auth import get_user_model
-
 
 def get_country(ip):
     if ip == "127.0.0.1":
@@ -54,6 +51,7 @@ class TicketCreateAPIView(APIView):
         try:
             user = request.user
             order_id = request.data.get('order_id')
+            print(user.id)
 
             # Check if user_id exists in PruneOrderDetails
             if not PruneOrderDetails.objects.filter(order_by=user, id = order_id).exists():
