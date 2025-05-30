@@ -10,6 +10,18 @@ from django.db import transaction
 def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     if created:
         return
+    
+   
+    print("📦 Order Details:")
+    for field in PruneOrderDetails._meta.fields:
+        print(f" - {field.name}: {getattr(instance, field.name)}")
+
+    # Print user details
+    print("\n👤 User Details:")
+    user = instance.order_by 
+    for field in user._meta.fields:
+        print(f" - {field.name}: {getattr(user, field.name)}")
+
 
     if (
         instance.status.lower() == "delivered"
@@ -17,6 +29,7 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
         and instance.discount > 0
         and not instance.payment_status
     ):
+        
         coupon = instance.coupon_code
 
         if coupon.promotion_type == "Cash back":

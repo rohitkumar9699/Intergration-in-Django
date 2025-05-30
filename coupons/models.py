@@ -54,7 +54,7 @@ class Coupon(models.Model):
 
     registered_by = models.EmailField(null=True, blank=True)
     token_used_count = models.PositiveIntegerField(default=0, help_text="Number of times the coupon has been used")
-
+    # can_be_only_used_by_ids = models.multiplefield
 
     
     def __str__(self):
@@ -70,15 +70,6 @@ class CouponUsage(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.coupon_code.coupon_code} - {self.usage_count}"
-
-
-
-
-from django.conf import settings
-from django.db import models
-from django.utils import timezone
-from decimal import Decimal
-from .models import Coupon  # assuming Coupon is in the same app or import properly
 
 
 
@@ -116,3 +107,4 @@ class PruneOrderDetails(models.Model):
     category = models.CharField(null= True)
 
     
+
