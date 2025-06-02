@@ -4,6 +4,9 @@ from decimal import Decimal
 from userManagement.models import Wallet
 from .models import PruneOrderDetails
 from django.db import transaction
+import json
+import requests
+from .serializers import PruneOrderDetailsSerializer
 
 
 @receiver(post_save, sender=PruneOrderDetails)
@@ -11,17 +14,26 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     if created:
         return
     
-   
-    print("📦 Order Details:")
-    for field in PruneOrderDetails._meta.fields:
-        print(f" - {field.name}: {getattr(instance, field.name)}")
+    serializer = PruneOrderDetailsSerializer(instance)
 
-    # Print user details
-    print("\n👤 User Details:")
-    user = instance.order_by 
-    for field in user._meta.fields:
-        print(f" - {field.name}: {getattr(user, field.name)}")
+    order_data = serializer.data  # dict, JSON serializable
 
+    try:
+        response = requests.post("http://localhost:8001/create-reward/", json=order_data)
+        print({
+            "status": "success",
+            "reward_api_status": response.status_code,
+            "response_data": response.json()
+        })
+
+    except requests.exceptions.RequestException as e:
+        print({
+            "status": "error",
+            "message": "Reward service unreachable",
+            "error": str(e)
+        })
+
+        p
 
     if (
         instance.status.lower() == "delivered"
