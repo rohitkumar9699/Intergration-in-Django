@@ -120,6 +120,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from decimal import Decimal
 from .models import Coupon, CouponUsage , PruneOrderDetails
+from userManagement.models import Wallet
 
 
 class ApplyCouponView(APIView):
@@ -335,7 +336,8 @@ class PlaceOrderView(APIView):
 
     def post(self, request):
         user = request.user
-
+        # auth_header = request.headers.get('Authorization')
+        # print(auth_header)
         try:
             # Extract order details
             product_name = request.data.get('product_name', 'Indian Sim')
@@ -391,3 +393,42 @@ class PlaceOrderView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+from userManagement.models import CustomUser
+from userManagement.models import Wallet
+
+class AddMoneyToWalletView(APIView):
+    def post(self, request):
+        wallet_username = request.data.get('wallet_username')
+        reward_amount = request.data.get('wallet_balance')
+
+        if not wallet_username:
+            return Response({"error": "Missing wallet_username"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not reward_amount:
+            return Response({"error": "Missing wallet_balance"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            reward_amount = Decimal(reward_amount)
+        except:
+            return Response({"error": "Invalid wallet_balance"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = CustomUser.objects.get(username=wallet_username)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        wallet = Wallet.objects.get(user=user)
+        prevoius_balance = wallet.amount 
+        wallet.amount = wallet.amount + float(reward_amount)
+        wallet.save()
+
+        return Response({
+            "message": "Money added to wallet successfully",
+            "prevoius_balance" : str(prevoius_balance),
+            "new_balance": str(wallet.amount)
+        }, status=status.HTTP_200_OK)

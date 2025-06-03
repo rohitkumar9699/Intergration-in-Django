@@ -7,6 +7,8 @@ from django.db import transaction
 import json
 import requests
 from .serializers import PruneOrderDetailsSerializer
+from userManagement.serializers import UserSerializer
+import requests
 
 
 @receiver(post_save, sender=PruneOrderDetails)
@@ -14,12 +16,18 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     if created:
         return
     
+    # print(**kwargs)
+    
     serializer = PruneOrderDetailsSerializer(instance)
-
     order_data = serializer.data  # dict, JSON serializable
 
+    user = instance.order_by
+    serializer1 = UserSerializer(user)
+    user_data = serializer1.data
+
+    merged_data = {**order_data, **user_data}
     try:
-        response = requests.post("http://localhost:8001/create-reward/", json=order_data)
+        response = requests.post("http://localhost:8001/create-card/", json= merged_data)
         print({
             "status": "success",
             "reward_api_status": response.status_code,
@@ -33,9 +41,7 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
             "error": str(e)
         })
 
-        p
-
-    if (
+    if ( 
         instance.status.lower() == "delivered"
         and instance.coupon_code
         and instance.discount > 0
