@@ -1,9 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .models import Coupon
-from .serializers import CouponSerializer
-from userManagement.models import *
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.utils import timezone
+from decimal import Decimal
+from .models import *
+from .serializers import *
+from .utils import apply_coupon_discount
+from userManagement.models import CustomUser, Wallet
+
 
 #Do not forget to add access-token the following JSON data in postman Only acess able to superuser
 # Sample JSON data for testing
@@ -100,8 +105,6 @@ class RegisterCouponView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 # Sample JSON data for testing
 
 '''
@@ -115,13 +118,6 @@ class RegisterCouponView(APIView):
   "amount": "1000"
 }
 '''
-
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.utils import timezone
-from decimal import Decimal
-from .models import Coupon, CouponUsage , PruneOrderDetails
-from userManagement.models import Wallet
-
 
 class ApplyCouponView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -318,19 +314,6 @@ class ApplyCouponView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-
-
-
-
-from decimal import Decimal
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from .models import PruneOrderDetails, Coupon
-from .serializers import PruneOrderDetailsSerializer
-from .utils import apply_coupon_discount
-
-
 class PlaceOrderView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -393,13 +376,6 @@ class PlaceOrderView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-
-from userManagement.models import CustomUser
-from userManagement.models import Wallet
 
 class AddMoneyToWalletView(APIView):
     def post(self, request):
