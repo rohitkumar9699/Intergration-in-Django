@@ -21,33 +21,31 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     serializer = PruneOrderDetailsSerializer(instance)
     order_data = serializer.data  # dict, JSON serializable
 
-    user = instance.order_by
-    serializer1 = UserSerializer(user)
-    user_data = serializer1.data
-
-    merged_data = {**order_data, **user_data}
-    try:
-        response = requests.post("http://localhost:8001/create-card/", json= merged_data)
-        print({
-            "status": "success",
-            "reward_api_status": response.status_code,
-            "response_data": response.json()
-        })
-
-    except requests.exceptions.RequestException as e:
-        print({
-            "status": "error",
-            "message": "Reward service unreachable",
-            "error": str(e)
-        })
 
     if ( 
         instance.status.lower() == "delivered"
-        and instance.coupon_code
-        and instance.discount > 0
-        and not instance.payment_status
     ):
         
+        user = instance.order_by
+        serializer1 = UserSerializer(user)
+        user_data = serializer1.data
+
+        merged_data = {**order_data, **user_data}
+        try:
+            response = requests.post("http://localhost:8001/create-card/", json= merged_data)
+            print({
+                "status": "success",
+                "reward_api_status": response.status_code,
+                "response_data": response.json()
+            })
+
+        except requests.exceptions.RequestException as e:
+            print({
+                "status": "error",
+                "message": "Reward service unreachable",
+                "error": str(e)
+            })
+
         coupon = instance.coupon_code
 
         if coupon.promotion_type == "Cash back":
