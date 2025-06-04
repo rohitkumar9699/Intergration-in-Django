@@ -406,5 +406,6 @@ class AddMoneyToWalletView(APIView):
         return Response({
             "message": "Money added to wallet successfully",
             "prevoius_balance" : str(prevoius_balance),
+            "reward_amount" : reward_amount,
             "new_balance": str(wallet.amount)
         }, status=status.HTTP_200_OK)
