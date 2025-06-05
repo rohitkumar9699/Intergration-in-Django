@@ -16,6 +16,9 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     if created:
         return
     
+    token = instance.get_access_token()
+    # print(token)
+    headers = {'Authorization': token}
 
     if ( 
         instance.status.lower() == "delivered"
@@ -29,12 +32,20 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
 
         merged_data = {**order_data, **user_data}
         try:
-            response = requests.post("http://localhost:8001/create-card/", json= merged_data)
+            response = requests.post("http://localhost:8001/create-card/", json= merged_data, headers=headers)
             print({
                 "status": "success",
                 "reward_api_status": response.status_code,
                 "response_data": response.json()
             })
+
+            #security
+            print("before")
+            print(instance.get_access_token())
+            instance.set_access_token(None)
+            print("after")
+            print(instance.get_access_token())
+            
 
         except requests.exceptions.RequestException as e:
             print({

@@ -122,7 +122,9 @@ class RegisterCouponView(APIView):
 class ApplyCouponView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
+    
 
+    
     def post(self, request):
         user = request.user
         code = request.data.get('coupon_code')
@@ -380,17 +382,36 @@ class PlaceOrderView(APIView):
 
 class DeliverStatusView(APIView):
 
+    authentication_classes = [JWTAuthentication]
+
     def post(self, request):
+        
+        user = request.user
+        if not user.is_superuser:
+            return Response(
+                {"error": "Only superusers can update delivery status."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         order_id = request.data.get('id')
         new_status = request.data.get('status')
 
         if not order_id or not new_status:
             return Response({'error': 'Order ID and status are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        updated_count = PruneOrderDetails.objects.filter(id=order_id).update(status=new_status)
+        try:
+            order = PruneOrderDetails.objects.get(id=order_id)
+            # ✅ Set token BEFORE saving, so signal can access it
+            auth_header = request.headers.get('Authorization')
+            order.set_access_token(auth_header)
 
-        if updated_count == 0:
-            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+            order.status = new_status
+            order.save()
+        except PruneOrderDetails.DoesNotExist:
+            return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
         return Response({'message': 'Order status updated successfully.'}, status=status.HTTP_200_OK)
     
