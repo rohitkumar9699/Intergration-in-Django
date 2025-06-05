@@ -16,16 +16,13 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     if created:
         return
     
-    # print(**kwargs)
     
-    serializer = PruneOrderDetailsSerializer(instance)
-    order_data = serializer.data  # dict, JSON serializable
-
-
     if ( 
         instance.status.lower() == "delivered"
     ):
         
+        serializer = PruneOrderDetailsSerializer(instance)
+        order_data = serializer.data  # dict, JSON serializable
         user = instance.order_by
         serializer1 = UserSerializer(user)
         user_data = serializer1.data

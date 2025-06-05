@@ -377,10 +377,26 @@ class PlaceOrderView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import AccessToken
+
 class AddMoneyToWalletView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
-        wallet_username = request.data.get('wallet_username')
+
+        user  = request.user
+        print(user)
+        print(user.username)
+
+        wallet_username = user.username
         reward_amount = request.data.get('wallet_balance')
+
+        # access_token = request.headers.get('Authorization')
+        # print(access_token)
 
         if not wallet_username:
             return Response({"error": "Missing wallet_username"}, status=status.HTTP_400_BAD_REQUEST)
