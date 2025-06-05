@@ -16,7 +16,7 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
     if created:
         return
     
-    
+
     if ( 
         instance.status.lower() == "delivered"
     ):

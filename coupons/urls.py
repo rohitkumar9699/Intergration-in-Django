@@ -7,4 +7,6 @@ urlpatterns = [
    
     path('place-order/', PlaceOrderView.as_view(), name='place_order'),
     path('add-money-to-wallet/',AddMoneyToWalletView.as_view(), name = 'add-money-to-wallet'),
+
+    path('delivery/', DeliverStatusView.as_view(), name = 'delivery' )
 ]

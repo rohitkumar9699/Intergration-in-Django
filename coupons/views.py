@@ -378,10 +378,22 @@ class PlaceOrderView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class DeliverStatusView(APIView):
 
-from rest_framework.exceptions import AuthenticationFailed
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import AccessToken
+    def post(self, request):
+        order_id = request.data.get('id')
+        new_status = request.data.get('status')
+
+        if not order_id or not new_status:
+            return Response({'error': 'Order ID and status are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_count = PruneOrderDetails.objects.filter(id=order_id).update(status=new_status)
+
+        if updated_count == 0:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({'message': 'Order status updated successfully.'}, status=status.HTTP_200_OK)
+    
 
 class AddMoneyToWalletView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -425,3 +437,5 @@ class AddMoneyToWalletView(APIView):
             "reward_amount" : reward_amount,
             "new_balance": str(wallet.amount)
         }, status=status.HTTP_200_OK)
+
+
