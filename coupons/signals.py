@@ -40,11 +40,11 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
             })
 
             #security
-            print("before")
-            print(instance.get_access_token())
+            # print("before")
+            # print(instance.get_access_token())
             instance.set_access_token(None)
-            print("after")
-            print(instance.get_access_token())
+            # print("after")
+            # print(instance.get_access_token())
             
 
         except requests.exceptions.RequestException as e:

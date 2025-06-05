@@ -384,7 +384,8 @@ class DeliverStatusView(APIView):
 
     authentication_classes = [JWTAuthentication]
 
-    def post(self, request):
+    # def post(self, request):
+    def patch(self, request):
         
         user = request.user
         if not user.is_superuser:
@@ -419,8 +420,9 @@ class DeliverStatusView(APIView):
 class AddMoneyToWalletView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
-
+    # def post(self, request):
+    def patch(self, request):
+    
         user  = request.user
         print(user)
         print(user.username)
