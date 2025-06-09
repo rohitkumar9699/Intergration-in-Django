@@ -10,72 +10,12 @@ from .utils import apply_coupon_discount
 from userManagement.models import CustomUser, Wallet
 
 
-#Do not forget to add access-token the following JSON data in postman Only acess able to superuser
-# Sample JSON data for testing
-'''
-Coupon -1
-// {
-//   "coupon_code": "NY-2025",
-//   "promotion_name": "New Year 2025 Special 20% Off",
-//   "short_description": "Kickstart 2025 with a 20% discount on your purchase!",
-//   "terms_and_conditions": "Valid on orders above ₹999. One-time use per user. Cannot be combined with other offers.",
-
-//   "promotion_type": "Discount",
-//   "discount_type": "Percentage",
-//   "discount_value": 20,
-//   "currency": "INR",
-
-//   "payment_option": "Unified Payments",
-//   "bank_or_card_name": "Any",
-
-//   "valid_from": "2024-12-31",
-//   "valid_until": "2025-01-05",
-
-//   "max_total_usage": 1000,
-//   "max_usage_per_user": 1,
-
-//   "min_order_value": 999.00,
-//   "max_discount_value": 300.00,
-
-//   "is_active": true
-// }
-
-# Counpan -2
-
-{
-  "coupon_code": "DIWALI-200",
-  "promotion_name": "Diwali Flat ₹200 Off",
-  "short_description": "Celebrate Diwali with a flat ₹200 discount on your order!",
-  "terms_and_conditions": "Valid on orders above ₹499. One-time use per user.",
-
-  "promotion_type": "Cash back",
-  "promotion_available": "Before_Order",
-  "discount_type": "Flat",
-  "discount_value":200,
-  "currency": "INR",
-
-  "payment_option": "Unified Payments",
-  "bank_or_card_name": "Any",
-
-  "valid_from": "2025-10-20",
-  "valid_until": "2025-11-10",
-
-  "max_total_usage": 500,
-  "max_usage_per_user": 1,
-
-  "min_order_value": 499.00,
-  "max_discount_value": 200.00,
-
-  "is_active": true
-}
-
-'''
-
 class RegisterCouponView(APIView):
     # permission_classes = [permissions.IsAuthenticated]  # Require authentication
 
     def post(self, request):
         user = request.user
+        print(user.communication_email)
 
         # Only superusers can register coupons
         if not user.is_superuser:
@@ -105,19 +45,7 @@ class RegisterCouponView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Sample JSON data for testing
 
-'''
-{
-  "coupon_code": "NY-2025",
-  "amount": "1000.00"
-}
-
-{
-  "code": "WELCOME50",
-  "amount": "1000"
-}
-'''
 
 class ApplyCouponView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -328,12 +256,15 @@ class PlaceOrderView(APIView):
             product_name = request.data.get('product_name', 'Indian Sim')
             product_id = request.data.get('product_id', 'PROD000')
             quantity = int(request.data.get('quantity', 1))
+            category = request.data.get('category', None)
             price_per_item = Decimal(request.data.get('price_per_item', '0.00'))
             payment_method = request.data.get('payment_method', 'Unified Payments')
             total_amount = price_per_item * quantity
 
+            # print("*****************", category)
+
             # Defaults
-            coupon_code_str = request.data.get('coupon_code')
+            coupon_code_str = request.data.get('coupon_code', None)
             discount = Decimal('0.00')
             final_amount = total_amount
             coupon_instance = None
@@ -341,28 +272,35 @@ class PlaceOrderView(APIView):
             # Apply coupon if provided
             if coupon_code_str:
                 coupon_result = apply_coupon_discount(
-                    request=request,
-                    user=user,
-                    code=coupon_code_str,
-                    amount=total_amount,
-                    payment_option=payment_method   
-                )
-                if not isinstance(coupon_result, Response):  # Handle error case only
-                    return Response(coupon_result, status=status.HTTP_400_BAD_REQUEST)
+                request=request,
+                user=user,
+                code=coupon_code_str,
+                category=category,
+                amount=total_amount,
+                payment_option=payment_method
+            )
 
-                discount = Decimal(coupon_result.data["discount_applied"])
-                final_amount = Decimal(coupon_result.data['final_amount'])
-                coupon_instance = Coupon.objects.filter(coupon_code=coupon_code_str).first()
+            # ❗ Handle failure
+            if coupon_result.status_code != 200:
+                return coupon_result  # Already a Response object with error
+
+            # ❗ Safe dictionary access
+            discount = Decimal(str(coupon_result.data.get("discount_applied", "0.00")))
+            final_amount = Decimal(str(coupon_result.data.get("final_amount", total_amount)))
+            coupon_instance = Coupon.objects.filter(coupon_code=coupon_code_str).first()
+
 
             # Create order
             order = PruneOrderDetails.objects.create(
                 order_by=user,
                 product_name=product_name,
                 product_id=product_id,
+                category = category,
                 quantity=quantity,
                 price_per_item=price_per_item,
                 total_amount=total_amount,
                 coupon_code=coupon_instance,
+                # coupon_code=coupon_code_str,
                 discount=discount,
                 final_amount=final_amount,
                 payment_method=payment_method,

@@ -9,16 +9,22 @@ from django.http import HttpResponse
 
 
 
-
-def apply_coupon_discount(request, user, code, amount, payment_option=None, bank_or_card_name=None):
+def apply_coupon_discount(request, user, code, category, amount, payment_option=None, bank_or_card_name=None):
     payment_option = payment_option
     bank_or_card_name = bank_or_card_name
     user = request.user
+    
+    coupon = Coupon.objects.get(coupon_code=code, is_active=True)
+    
+    if coupon.category.name.lower() != "all" and coupon.category.name.lower() != str(category).lower():
+        return Response({"error": "This coupon is not valid for the selected category"}, status=status.HTTP_400_BAD_REQUEST)
+
 
     if not code or not amount:
             return Response({"error": "coupon_code and amount are required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+
         amount = Decimal(amount)
         if amount <= 0:
             raise ValueError

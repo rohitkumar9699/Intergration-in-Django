@@ -1,10 +1,9 @@
 from django.contrib import admin
-from .models import Coupon, CouponUsage, PruneOrderDetails
-
+from .models import *
 @admin.register(Coupon)
 class CouponAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'coupon_code', 'promotion_name', 'short_description',
+        'id','category', 'coupon_code', 'promotion_name', 'short_description',
         'promotion_type', 'discount_type', 'discount_value',
         'currency', 'payment_option', 'bank_or_card_name',
         'valid_from', 'valid_until', 'max_total_usage',
@@ -38,3 +37,9 @@ class PruneOrderDetailsAdmin(admin.ModelAdmin):
     )
     
     ordering = ('-order_date',)
+
+
+
+@admin.register(ProductCategory)
+class ProductCategoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')  # Only valid fields from ProductCategory

@@ -4,7 +4,6 @@ from decimal import Decimal
 from userManagement.models import Wallet
 from .models import PruneOrderDetails
 from django.db import transaction
-import json
 import requests
 from .serializers import PruneOrderDetailsSerializer
 from userManagement.serializers import UserSerializer
@@ -22,8 +21,7 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
 
     if ( 
         instance.status.lower() == "delivered"
-    ):
-        
+    ):   
         serializer = PruneOrderDetailsSerializer(instance)
         order_data = serializer.data  # dict, JSON serializable
         user = instance.order_by
@@ -56,7 +54,7 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
 
         coupon = instance.coupon_code
 
-        if coupon.promotion_type == "Cash back":
+        if  coupon.promotion_type == "Cash back" :
             try:
                 wallet = Wallet.objects.get(user=instance.order_by)
 
@@ -73,8 +71,8 @@ def give_cashback_on_order_delivery(sender, instance, created, **kwargs):
 
                 transaction.on_commit(mark_payment_done)
 
-                print(f"✅ Cashback of ₹{cashback} added to user {instance.order_by}.")
+                print(f"Cashback of ₹{cashback} added to user {instance.order_by}.")
                 print(f"Wallet: ₹{old_balance} → ₹{wallet.amount}")
 
             except Wallet.DoesNotExist:
-                print(f"⚠️ Wallet not found for user {instance.order_by}.")
+                print(f" Wallet not found for user {instance.order_by}.")
